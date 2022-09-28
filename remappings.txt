@@ -1,0 +1,2 @@
+@gsn/=lib/gsn/
+@openzeppelin/=lib/gsn/node_modules/@openzeppelin/
