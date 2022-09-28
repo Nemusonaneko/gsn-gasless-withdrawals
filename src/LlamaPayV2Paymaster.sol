@@ -11,6 +11,7 @@ interface Factory {
 }
 
 error NOT_WHITELISTED_OR_OWNER();
+error NOT_TARGET();
 
 contract LlamaPayV2Paymaster is BasePaymaster {
     address public immutable target;
@@ -28,7 +29,7 @@ contract LlamaPayV2Paymaster is BasePaymaster {
         override
         returns (string memory)
     {
-        return "3.0.0-beta.2+opengsn.llamapayv2paymaster.ipaymaster";
+        return "3.0.0-beta.2+opengsn";
     }
 
     function _preRelayedCall(
@@ -42,11 +43,12 @@ contract LlamaPayV2Paymaster is BasePaymaster {
         override
         returns (bytes memory context, bool revertOnRecipientRevert)
     {
-        address signer = relayRequest.request.from;
-        bytes calldata data = relayRequest.request.data;
+        if (relayRequest.request.to != target) revert NOT_TARGET();
 
-        (address payer, uint256 id, uint256 amount) = abi.decode(
-            data,
+        address signer = relayRequest.request.from;
+
+        (address payer, uint256 id,) = abi.decode(
+            relayRequest.request.data,
             (address, uint256, uint256)
         );
 
@@ -55,7 +57,7 @@ contract LlamaPayV2Paymaster is BasePaymaster {
             signer != Factory(factory).ownerOf(id)
         ) revert NOT_WHITELISTED_OR_OWNER();
 
-        return ("", true);
+        return ("", false);
     }
 
     function _postRelayedCall(
