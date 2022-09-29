@@ -48,7 +48,7 @@ contract LlamaPayV2Paymaster is BasePaymaster {
         if (maxPossibleGas > balances[payer]) revert NOT_ENOUGH_BALANCE();
         currentPayer = payer;
         (signature, approvalData);
-        return ("", false);
+        return ("", true);
     }
 
     function _postRelayedCall(
