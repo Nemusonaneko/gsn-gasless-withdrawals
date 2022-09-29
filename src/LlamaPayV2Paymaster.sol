@@ -12,10 +12,14 @@ interface Factory {
 
 error NOT_WHITELISTED_OR_OWNER();
 error NOT_TARGET();
+error NOT_ENOUGH_BALANCE();
 
 contract LlamaPayV2Paymaster is BasePaymaster {
     address public immutable target;
     address public immutable factory;
+    address public currentPayer;
+
+    mapping(address => uint256) balances;
 
     constructor(address _target, address _factory) {
         target = _target;
@@ -44,10 +48,9 @@ contract LlamaPayV2Paymaster is BasePaymaster {
         returns (bytes memory context, bool revertOnRecipientRevert)
     {
         if (relayRequest.request.to != target) revert NOT_TARGET();
-
         address signer = relayRequest.request.from;
 
-        (address payer, uint256 id,) = abi.decode(
+        (address payer, uint256 id, ) = abi.decode(
             relayRequest.request.data,
             (address, uint256, uint256)
         );
@@ -57,6 +60,9 @@ contract LlamaPayV2Paymaster is BasePaymaster {
             signer != Factory(factory).ownerOf(id)
         ) revert NOT_WHITELISTED_OR_OWNER();
 
+        if (maxPossibleGas > balances[payer]) revert NOT_ENOUGH_BALANCE();
+        currentPayer = payer;
+        (signature, approvalData);
         return ("", false);
     }
 
@@ -66,6 +72,18 @@ contract LlamaPayV2Paymaster is BasePaymaster {
         uint256 gasUseWithoutPost,
         GsnTypes.RelayData calldata relayData
     ) internal virtual override {
-        (context, success, gasUseWithoutPost, relayData);
+        balances[currentPayer] -= gasUseWithoutPost;
+        (context, success, relayData);
+    }
+
+    function deposit() public payable {
+        relayHub.depositFor{value: msg.value}(address(this));
+        balances[msg.sender] += msg.value;
+    }
+
+    function refund() public {
+        uint256 toRefund = balances[msg.sender];
+        balances[msg.sender] = 0;
+        withdrawRelayHubDepositTo(toRefund, payable(msg.sender));
     }
 }
