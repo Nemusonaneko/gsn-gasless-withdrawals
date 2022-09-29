@@ -19,8 +19,8 @@ contract LlamaPayV2GaslessWithdrawals is ERC2771Recipient {
         uint256 amount
     );
 
-    constructor(Forwarder _forwarder) {
-        ERC2771Recipient(address(_forwarder));
+    constructor(address _forwarder) {
+        ERC2771Recipient(_forwarder);
     }
 
     function executeWithdrawal(
