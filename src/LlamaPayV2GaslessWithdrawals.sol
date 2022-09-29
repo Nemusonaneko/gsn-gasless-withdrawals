@@ -9,8 +9,6 @@ interface Payer {
     function withdraw(uint256, uint256) external;
 }
 
-error NOT_WHITELISTED_OR_OWNER();
-
 contract LlamaPayV2GaslessWithdrawals is ERC2771Recipient {
     event GaslessWithdraw(
         address caller,

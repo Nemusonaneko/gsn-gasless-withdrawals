@@ -4,26 +4,17 @@ pragma solidity ^0.8.17;
 
 import "@gsn/packages/contracts/src/BasePaymaster.sol";
 
-interface Factory {
-    function whitelists(address, address) external view returns (uint256);
-
-    function ownerOf(uint256) external view returns (address);
-}
-
-error NOT_WHITELISTED_OR_OWNER();
 error NOT_TARGET();
 error NOT_ENOUGH_BALANCE();
 
 contract LlamaPayV2Paymaster is BasePaymaster {
     address public immutable target;
-    address public immutable factory;
     address public currentPayer;
 
     mapping(address => uint256) balances;
 
-    constructor(address _target, address _factory) {
+    constructor(address _target) {
         target = _target;
-        factory = _factory;
     }
 
     function versionPaymaster()
@@ -48,17 +39,11 @@ contract LlamaPayV2Paymaster is BasePaymaster {
         returns (bytes memory context, bool revertOnRecipientRevert)
     {
         if (relayRequest.request.to != target) revert NOT_TARGET();
-        address signer = relayRequest.request.from;
 
-        (address payer, uint256 id, ) = abi.decode(
+        (address payer, , ) = abi.decode(
             relayRequest.request.data,
             (address, uint256, uint256)
         );
-
-        if (
-            Factory(factory).whitelists(payer, signer) != 1 &&
-            signer != Factory(factory).ownerOf(id)
-        ) revert NOT_WHITELISTED_OR_OWNER();
 
         if (maxPossibleGas > balances[payer]) revert NOT_ENOUGH_BALANCE();
         currentPayer = payer;
